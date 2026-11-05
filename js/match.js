@@ -180,12 +180,15 @@ function tryPair(p, n) {
 
 function finish() {
   clearInterval(timer);
-  const stars = state.errors <= 1 ? 3 : state.errors <= 4 ? 2 : 1;
+  // Блискавки: «Знайди пару» — до 2, «Умовні позначення» — до 3 (менше помилок — більше блискавок)
+  const max = gameMax(SET.id);
+  const e = state.errors;
+  const stars = max === 2 ? (e <= 2 ? 2 : 1) : (e <= 1 ? 3 : e <= 4 ? 2 : 1);
   saveStars(SET.id, stars);
   setTimeout(() => showResult({
-    stars,
-    title: stars === 3 ? 'Чудово!' : stars === 2 ? 'Добре!' : 'Непогано!',
-    text: `Усі пари знайдено за ${fmtTime(state.sec)}. Помилок: ${state.errors}. Наступного разу елементи будуть інші!`,
+    stars, game: SET.id,
+    title: stars === max ? 'Чудово!' : stars > 1 ? 'Добре!' : 'Непогано!',
+    text: `Усі пари знайдено за ${fmtTime(state.sec)}. Помилок: ${state.errors}.` + (stars < max ? ' Спробуй ще раз з меншою кількістю помилок — і отримаєш більше блискавок!' : ''),
     again: start
   }), 700);
 }

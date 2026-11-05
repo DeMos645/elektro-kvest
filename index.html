@@ -40,7 +40,7 @@
     </div>
     <div class="player-box">
       <span id="player-name"></span>
-      <button class="btn btn-small" id="new-player" title="Стерти зірки й почати заново">🔄 Новий гравець</button>
+      <button class="btn btn-small" id="new-player" title="Стерти блискавки й почати заново">🔄 Новий гравець</button>
     </div>
   </div>
   <div class="games" id="games"></div>
@@ -142,15 +142,15 @@
     box.innerHTML = '';
     GAMES.forEach((g, i) => {
       const s = prog[g.id] || 0; sum += s;
-      box.appendChild(el(`<a class="game-card reveal ${s === 3 ? 'complete' : ''}" style="--d:${i * 90}ms" href="${g.href}">
-        <div class="gc-top"><span class="num">0${i + 1}</span><span class="gc-stars">${starsHTML(s)}</span></div>
+      const max = gameMax(g.id); // легша гра — менше блискавок, складніша — більше
+      box.appendChild(el(`<a class="game-card reveal ${s === max ? 'complete' : ''}" style="--d:${i * 90}ms" href="${g.href}">
+        <div class="gc-top"><span class="num">0${i + 1}</span><span class="gc-stars">${starsHTML(s, max)}</span></div>
         <div class="icon">${g.icon}</div>
         <h3>${g.title}</h3><p>${g.desc}</p>
         <div class="gc-foot"><span class="lvl ${g.lc}">${g.lvl}</span><span class="play">${s ? 'Ще раз' : 'Грати'} →</span></div></a>`));
     });
-    const max = GAMES.length * 3;
-    document.getElementById('total').innerHTML = `★ <b>${sum}</b> з ${max}`;
-    requestAnimationFrame(() => document.getElementById('total-bar').style.width = (sum / max * 100) + '%');
+    document.getElementById('total').innerHTML = `<span class="bolt-ic on">${BOLT_SVG}</span> <b>${sum}</b> з ${MAX_TOTAL}`;
+    requestAnimationFrame(() => document.getElementById('total-bar').style.width = (sum / MAX_TOTAL * 100) + '%');
 
     const name = player && player.name;
     document.getElementById('greet').innerHTML = name ? `Привіт, <b>${esc(name)}</b>! 👋` : '';
@@ -160,7 +160,7 @@
     observeReveal();
   }
 
-  // Сертифікат: відкривається, коли пройдено всі 4 гри (хоча б по 1 зірці)
+  // Сертифікат: відкривається, коли пройдено всі 4 гри (хоча б по 1 блискавці)
   function renderCert(prog, p) {
     const done = GAMES.filter(g => (prog[g.id] || 0) > 0).length;
     const box = document.getElementById('cert');
@@ -185,8 +185,8 @@
               <label><input type="radio" name="gender" value="m"><span>👦 Учень</span></label>
               <label><input type="radio" name="gender" value="f"><span>👧 Учениця</span></label>
             </div><span class="err" id="g-err"></span></div>
-          <label class="f-school">Школа<input name="school" maxlength="60" value="${esc(p.school)}" placeholder="Наприклад, Ліцей № 5"><span class="err"></span></label>
-          <label class="f-grade">Клас<input name="grade" maxlength="5" value="${esc(p.grade)}" placeholder="9-А"><span class="err"></span></label>
+          <label class="f-school">Навчальний заклад<input name="school" maxlength="60" value="${esc(p.school)}" placeholder="Наприклад, Ліцей № 5 або коледж"><span class="err"></span></label>
+          <label class="f-grade">Клас / курс<input name="grade" maxlength="12" value="${esc(p.grade)}" placeholder="9-А"><span class="err"></span></label>
           <label class="f-city">Місто<input name="city" maxlength="30" value="${esc(p.city)}" placeholder="Кривий Ріг"><span class="err"></span></label>
           <button class="btn btn-lg" type="submit">🎓 Отримати сертифікат</button>
         </form></div>`;
@@ -201,8 +201,9 @@
     const textInputs = [...form.querySelectorAll('input:not([type=radio])')];
     textInputs.forEach(i => i.addEventListener('blur', () => validate(i)));
 
-    // Стать: вибрана раніше, або здогадка за ім'ям (поки учень сам не перемкне)
-    let genderTouched = !!p.gender;
+    // Стать: вибрана раніше, або здогадка за ім'ям. Якщо учень змінює ім'я — перемикач підлаштовується,
+    // доки учень сам не натисне на нього в цій формі
+    let genderTouched = false;
     const setGender = g => { const r = form.querySelector(`input[name=gender][value="${g}"]`); if (r) r.checked = true; };
     setGender(p.gender || guessGender(p.name));
     form.querySelectorAll('input[name=gender]').forEach(r => r.addEventListener('change', () => { genderTouched = true; form.querySelector('#g-err').textContent = ''; }));
@@ -215,7 +216,7 @@
       form.querySelector('#g-err').textContent = g ? '' : 'Обери, будь ласка.';
       if (!ok || !g) { (textInputs.find(i => i.classList.contains('bad-input')) || form.querySelector('.seg input')).focus(); return; }
       const v = n => form[n].value.trim().replace(/\s+/g, ' ');
-      savePlayer({ ...loadPlayer(), name: tidyName(v('name')), gender: g, school: v('school'), grade: v('grade').toUpperCase(), city: tidyName(v('city')) });
+      savePlayer({ ...loadPlayer(), name: tidyName(v('name')), gender: g, school: v('school'), grade: tidyGrade(v('grade')), city: tidyName(v('city')) });
       location.href = 'certificate.html';
     };
   }
@@ -245,11 +246,11 @@
     m.querySelector('#skip').onclick = () => done('');
   }
 
-  // «Новий гравець»: підтвердження, стирання зірок і даних
+  // «Новий гравець»: підтвердження, стирання блискавок і даних
   document.getElementById('new-player').onclick = () => {
     const m = el(`<div class="modal-bg"><div class="modal">
       <div class="welcome-bolt">🔄</div><h2>Почати з нуля?</h2>
-      <p>Усі зірки та ім'я на цьому комп'ютері буде стерто. Це зручно, коли грає наступний учень.</p>
+      <p>Усі блискавки та ім'я на цьому пристрої буде стерто. Це зручно, коли грає наступний учень.</p>
       <div class="row"><button class="btn" id="yes">Так, новий гравець</button><button class="btn btn-ghost" id="no">Скасувати</button></div></div></div>`);
     document.body.appendChild(m);
     m.querySelector('#no').onclick = () => m.remove();
@@ -271,6 +272,18 @@
 
   renderAll();
   if (!loadPlayer()) askName(false); // перший вхід — питаємо ім'я
+
+  // Повернення з гри (index.html#choose або #cert) — одразу показуємо вибір ігор, без заставки
+  if (location.hash === '#choose' || location.hash === '#cert') {
+    const target = document.querySelector(location.hash);
+    document.querySelectorAll('.reveal').forEach(e => e.classList.add('in', 'settled'));
+    const jump = () => {
+      const y = target.getBoundingClientRect().top + window.scrollY - (location.hash === '#cert' ? 80 : 0);
+      window.scrollTo({ top: y, behavior: 'instant' });
+    };
+    jump();                                   // одразу
+    window.addEventListener('load', jump, { once: true }); // і ще раз, коли все завантажилось
+  }
 </script>
 </body>
 </html>

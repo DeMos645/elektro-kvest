@@ -139,25 +139,25 @@
   // повторна перевірка: на сертифікат потрапляють лише охайні дані
   const safe = (kind, v) => v && !checkField(kind, v) ? v : '';
 
-  // зірки — векторні, однакові й рівні
-  const star = on => `<path d="M10 1.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L10 14.9l-5.2 2.8 1-5.9L1.5 7.7l5.9-.8z" transform="translate(${on.x} 0)" fill="${on.on ? '#e0a91f' : '#e3d9c2'}"/>`;
-  const stars = n => `<svg viewBox="0 0 62 19">${[0, 1, 2].map(i => star({ x: i * 21, on: i < n })).join('')}</svg>`;
+  // блискавки — векторні, однакові й рівні; кількість залежить від складності гри
+  const bolt = (x, on) => `<path d="M13.5 1.5 4 13.5h6.2L9 22.5l10.5-12.8h-6.4z" transform="translate(${x} 0)" fill="${on ? '#e0a91f' : '#e3d9c2'}"/>`;
+  const stars = (n, max) => `<svg viewBox="0 0 ${max * 20 - 2} 24">${Array.from({ length: max }, (_, i) => bolt(i * 20 - 3, i < n)).join('')}</svg>`;
 
   set('c-uni', CONFIG.college);
   set('c-name', safe('name', p.name) || 'Учасник квесту');
-  set('c-who', [safe('school', p.school), safe('grade', p.grade) ? p.grade + ' клас' : '', safe('city', p.city)].filter(Boolean).join('  ·  '));
+  set('c-who', [safe('school', p.school), gradeLabel(safe('grade', p.grade)), safe('city', p.city)].filter(Boolean).join('  ·  '));
   // текст у потрібному роді: стать обрав учень, або здогадка за ім'ям
   const fem = (p.gender || guessGender(p.name)) === 'f';
   const g = (m, f) => fem ? f : m;
   document.getElementById('c-text').innerHTML =
-    `успішно ${g('пройшов', 'пройшла')} усі чотири випробування Електро-квесту: ${g('впізнав', 'впізнала')} елементи кола та їхні умовні позначення, ${g('зібрав', 'зібрала')} електричні схеми й ${g('відповів', 'відповіла')} на питання вікторини. ${g('Здобув', 'Здобула')} <b>${total} з ${GAMES.length * 3} зірок</b>.`;
-  document.getElementById('c-res').innerHTML = GAMES.map(([id, t]) => `<div class="res"><span>${t}</span>${stars(prog[id] || 0)}</div>`).join('');
+    `успішно ${g('пройшов', 'пройшла')} усі чотири випробування Електро-квесту: ${g('впізнав', 'впізнала')} елементи кола та їхні умовні позначення, ${g('зібрав', 'зібрала')} електричні схеми й ${g('відповів', 'відповіла')} на питання вікторини. ${g('Здобув', 'Здобула')} <b>${total} з ${MAX_TOTAL} блискавок</b>.`;
+  document.getElementById('c-res').innerHTML = GAMES.map(([id, t]) => `<div class="res"><span>${t}</span>${stars(prog[id] || 0, gameMax(id))}</div>`).join('');
   set('c-date', new Date().toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }));
   set('c-spec', CONFIG.speciality);
   document.title = 'Сертифікат — ' + (safe('name', p.name) || 'Електро-квест'); // назва PDF-файлу за замовчуванням
 
   document.getElementById('print').onclick = () => window.print();
-  if (total >= 10) setTimeout(confetti, 500);
+  if (total >= MAX_TOTAL * 0.75) setTimeout(confetti, 500);
 </script>
 </body>
 </html>

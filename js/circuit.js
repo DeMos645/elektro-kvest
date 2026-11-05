@@ -291,6 +291,7 @@ function drawBoard() {
     svg += `<circle data-glow="${id}" cx="${p.x}" cy="${p.y}" r="85" fill="url(#glow)" opacity="${Math.min(1, m.lamps[id])}"/>`;
   }
 
+  svg += '<g id="bd-main">'; // усе, крім сяйва, — для підгонки масштабу на телефоні
   // дроти, вузли, коротке замикання
   L.wires.forEach(d => svg += `<path class="wire" d="${d}"/>`);
   if (st.short) svg += `<path class="wire short" d="${PAR_WIRE}"/>`;
@@ -335,10 +336,27 @@ function drawBoard() {
   // покази приладів
   m.readings.forEach((r, i) => svg += `<text data-read="${i}" class="reading ${r.cls || ''}" x="${r.x}" y="${r.y}" text-anchor="${r.anchor || 'middle'}">${r.text}</text>`);
 
+  svg += '</g>';
   board.innerHTML = svg;
   boardSig = sigOf(m);
+  fitBoard();
   return m;
 }
+
+/* На телефоні схема дрібна: обрізаємо порожні поля навколо неї, щоб вона була якомога більшою.
+   Межі лише розширюються в межах рівня (коли з'являються покази приладів), тож схема не «стрибає». */
+let fit = { lv: -1, box: null };
+const narrow = () => matchMedia('(max-width: 760px)').matches;
+function fitBoard() {
+  if (!narrow()) { board.setAttribute('viewBox', '0 0 720 400'); fit = { lv: -1, box: null }; return; }
+  const b = board.querySelector('#bd-main').getBBox();
+  const pad = 26;
+  let box = { x1: b.x - pad, y1: b.y - pad, x2: b.x + b.width + pad, y2: b.y + b.height + pad };
+  if (fit.lv === lv && fit.box) box = { x1: Math.min(box.x1, fit.box.x1), y1: Math.min(box.y1, fit.box.y1), x2: Math.max(box.x2, fit.box.x2), y2: Math.max(box.y2, fit.box.y2) };
+  fit = { lv, box };
+  board.setAttribute('viewBox', `${box.x1} ${box.y1} ${box.x2 - box.x1} ${box.y2 - box.y1}`);
+}
+window.addEventListener('resize', () => { fit = { lv: -1, box: null }; fitBoard(); });
 
 /* Під час плавних змін (заряд конденсатора) схему не перемальовуємо повністю —
    інакше анімація рисок щокадру починалася б спочатку й риски «стояли б». Оновлюємо лише цифри та яскравість. */
@@ -578,10 +596,10 @@ side.addEventListener('pointerdown', e => {
 });
 
 function finish() {
-  const stars = mistakes <= 1 ? 3 : mistakes <= 4 ? 2 : 1;
+  const stars = mistakes <= 1 ? 3 : mistakes <= 4 ? 2 : 1; // до 3 блискавок
   saveStars('circuit', stars);
   showResult({
-    stars,
+    stars, game: 'circuit',
     title: 'Усі схеми зібрано!',
     text: `Помилок: ${mistakes}. Ти зібрав коло, виміряв струм і напругу, порівняв послідовне й паралельне з'єднання, приборкав діод, побачив, як запобіжник рятує від пожежі, дізнався, чому конденсатор пропускає лише змінний струм, і зарядив його від батарейки. Саме це щодня роблять електрики!`,
     again: startGame

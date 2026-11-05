@@ -44,11 +44,18 @@ a { color: inherit; }
 .topbar h1 { font-size: 20px; margin: 0; flex: 1; font-weight: 700; }
 .topbar .stat { font-variant-numeric: tabular-nums; background: var(--navy-2); padding: 6px 12px; border-radius: 999px; font-size: 15px; white-space: nowrap; }
 .topbar .stat b { color: var(--yellow); }
+.topbar .stat .ico { display: none; color: #ff8a8e; }
 @media (max-width: 600px) {
   .topbar { flex-wrap: wrap; gap: 6px 10px; padding: 10px 14px; }
   .topbar h1 { font-size: 17px; flex: 1 1 auto; }
   .topbar .stat { font-size: 13px; padding: 4px 10px; }
   .topbar .stat:first-of-type { margin-left: auto; }
+  /* одна компактна смуга: «Помилки:» → ✖, щоб усе вміщалося в рядок */
+  .topbar { flex-wrap: nowrap; gap: 8px; }
+  .topbar h1 { font-size: 16px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar .back { font-size: 14px; }
+  .topbar .stat .lbl { display: none; }
+  .topbar .stat .ico { display: inline; }
 }
 
 .wrap { max-width: 1100px; margin: 0 auto; padding: 22px 16px 60px; }
@@ -260,7 +267,6 @@ html { scroll-behavior: smooth; }
 .game-card:hover { transform: translateY(-4px); border-color: #dccbe2; box-shadow: 0 2px 4px rgba(61, 8, 70, .06), 0 18px 36px rgba(61, 8, 70, .14); }
 .gc-top { display: flex; justify-content: space-between; align-items: center; }
 .gc-top .num { font-weight: 800; font-size: 13px; color: var(--navy-2); background: var(--brand-tint); padding: 4px 9px; border-radius: 8px; }
-.gc-stars .star { font-size: 17px; }
 .game-card .icon {
   height: 112px; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(160deg, #fbf8fc, var(--brand-tint)); border-radius: 14px; color: var(--navy-2);
@@ -279,9 +285,20 @@ html { scroll-behavior: smooth; }
 .gc-foot .play { font-weight: 700; font-size: 14px; color: var(--navy-2); white-space: nowrap; transition: transform .2s; }
 .game-card:hover .play { transform: translateX(3px); }
 .game-card.complete { border-color: #f1d98f; }
-.star { color: #cfd4dc; font-size: 20px; }
-.star.on { color: var(--yellow); text-shadow: 0 0 6px rgba(255, 197, 51, .6); }
-.stars.big .star { font-size: 48px; }
+/* Нагорода — блискавки */
+.bolts { display: inline-flex; gap: 1px; vertical-align: middle; }
+.bolt-ic { display: inline-block; width: 1.1em; height: 1.1em; color: #d9d2e0; vertical-align: -.15em; }
+.bolt-ic svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+.bolt-ic.on { color: var(--yellow); filter: drop-shadow(0 0 4px rgba(255, 197, 51, .55)); }
+.gc-stars { font-size: 18px; }
+.stars.big { font-size: 46px; }
+.stars.big .bolt-ic.on { animation: bolt-pop .45s cubic-bezier(.2, 1.6, .4, 1) both; }
+.stars.big .bolt-ic:nth-child(2) { animation-delay: .12s; }
+.stars.big .bolt-ic:nth-child(3) { animation-delay: .24s; }
+.stars.big .bolt-ic:nth-child(4) { animation-delay: .36s; }
+@keyframes bolt-pop { from { transform: scale(0) rotate(-30deg); opacity: 0; } }
+.modal .got { font-weight: 700; color: var(--navy-2); font-size: 14px; margin-top: 4px; }
+.progress-head .bolt-ic { width: 1em; height: 1em; }
 .footer { text-align: center; color: var(--muted); font-size: 14px; margin-top: 36px; }
 .footer a { color: var(--navy-2); font-weight: 600; }
 
@@ -390,7 +407,11 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
   .pics { grid-template-columns: repeat(2, 1fr); grid-auto-rows: auto; gap: 12px; }
   .pic { padding: 8px; gap: 8px; }
   .pic svg.ill { height: 84px; }
-  .pic svg.sym { height: 56px; }
+  .pic svg.sym { height: 74px; }
+  .pic svg.sym > g { stroke-width: 3.6; }
+  .pic svg.ill { height: 96px; }
+  .cap-q { display: none; } /* на телефоні підпис «Перетягни сюди» замінює знак питання */
+  .pic:not(.done) .cap::before { content: "?"; font-weight: 800; color: #c9b6d0; font-size: 18px; }
   .pic .cap { min-height: 34px; font-size: 13px; }
   .cap-q { font-size: 11px; }
   .match-side { display: contents; } /* щоб «липка» панель трималася всієї сторінки, а не лише свого блоку */
@@ -432,6 +453,26 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 
 /* ---------- Гра «Збери коло» ---------- */
 .wrap-full { max-width: 1800px; padding-left: 24px; padding-right: 24px; }
+/* «Збери коло» на телефоні: схема крупніша, лінії товщі, схема «прилипає» вгорі,
+   щоб її було видно, поки обираєш деталь у списку нижче */
+@media (max-width: 760px) {
+  .circuit-layout { gap: 14px; }
+  .board { position: sticky; top: 52px; z-index: 6; padding: 6px; border-radius: 16px; box-shadow: 0 8px 20px rgba(61, 8, 70, .18); }
+  .board svg { max-height: 46vh; }
+  .board .wire { stroke-width: 5; }
+  .board .flow { stroke-width: 5.5; }
+  .board .comp > g, .board .click > g { stroke-width: 3.4; }
+  .board .reading { font-size: 24px; }
+  .board .out-label { font-size: 18px; }
+  .board .slot-q { font-size: 36px; }
+  /* підказка — одразу під завданням, а не в самому низу */
+  .side { display: flex; flex-direction: column; }
+  .side .msg { order: 1; margin-top: 0; margin-bottom: 12px; }
+  .side .palette, .side .slider, .side .row, .side #next-wrap { order: 2; }
+  .side #next-wrap { order: 1; margin-bottom: 8px; }
+  .part { padding: 10px 6px; font-size: 14px; }
+  .part svg { width: 80px; height: 40px; }
+}
 @media (max-width: 480px) {
   .wrap-full { padding-left: 16px; padding-right: 16px; }
   .side { padding: 16px; }

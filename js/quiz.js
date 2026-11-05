@@ -362,9 +362,18 @@ function answer(btn) {
       <div class="row" style="margin-top:16px;justify-content:flex-start"><button class="btn" id="go">${ok && !last ? 'Наступне питання →' : 'Результат'}</button></div>`;
     renderLadder();
     const go = document.getElementById('go');
-    go.focus();
-    go.onclick = () => { if (ok && !last) { qi++; show(); } else finish(ok ? 'win' : 'lose'); };
+    go.focus({ preventScroll: true });
+    // на телефоні пояснення й кнопка можуть бути нижче екрана — плавно показуємо їх
+    go.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    go.onclick = () => { if (ok && !last) { qi++; show(); scrollToQuestion(); } else finish(ok ? 'win' : 'lose'); };
   }, 1300);
+}
+
+// Нове питання — повертаємо екран нагору, до питання (якщо воно сховалося вище)
+function scrollToQuestion() {
+  const bar = document.querySelector('.topbar');
+  const top = card.getBoundingClientRect().top + window.scrollY - (bar ? bar.offsetHeight : 0) - 10;
+  if (window.scrollY > top) window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
 /* ---------- Кінець гри ---------- */
@@ -376,7 +385,8 @@ function finish(mode) {
     const safe = SAFE.filter(s => s < qi).pop();
     kept = safe != null ? PRIZES[safe] : 0;
   }
-  const stars = reached >= 12 ? 3 : reached >= 8 ? 2 : reached >= 4 ? 1 : 0;
+  // до 4 блискавок: усі 12 — 4, від 9 — 3, від 6 — 2, від 3 — 1
+  const stars = reached >= 12 ? 4 : reached >= 9 ? 3 : reached >= 6 ? 2 : reached >= 3 ? 1 : 0;
   saveStars('quiz', stars);
   const miss = log.find(x => !x.ok);
   const title = won ? 'Ти — справжній електрик! ⚡' : mode === 'take' ? 'Мудре рішення!' : 'Гру завершено';
@@ -384,7 +394,7 @@ function finish(mode) {
     (mode === 'take' ? ' Ти вчасно зупинився й забрав виграш.' : '') +
     (miss ? `<span class="miss">Питання, на якому ти спіткнувся: «${miss.q}». Правильна відповідь — <b>${miss.a}</b>.</span>` : '') +
     '<span class="miss">Наступного разу питання будуть інші!</span>';
-  showResult({ stars, title, text, again: start });
+  showResult({ stars, title, text, again: start, game: 'quiz' });
 }
 
 document.getElementById('take').onclick = () => { if (!locked && score) finish('take'); };

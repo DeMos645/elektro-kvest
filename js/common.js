@@ -2,8 +2,22 @@
 
 const STORE_KEY = 'elektro_kvest_progress';
 
+/* Нагорода — блискавки. Чим складніша гра, тим більше блискавок можна здобути.
+   Разом 12 — як шкільна оцінка. Порядок — від легкої гри до складної. */
+const GAME_LIST = [
+  { id: 'match_elements', href: 'match.html?set=elements', title: 'Знайди пару', max: 2 },
+  { id: 'match_symbols', href: 'match.html?set=symbols', title: 'Умовні позначення', max: 3 },
+  { id: 'circuit', href: 'circuit.html', title: 'Збери коло', max: 3 },
+  { id: 'quiz', href: 'quiz.html', title: 'Хто хоче стати електриком?', max: 4 }
+];
+const MAX_TOTAL = GAME_LIST.reduce((s, g) => s + g.max, 0); // 12
+const gameMax = id => (GAME_LIST.find(g => g.id === id) || { max: 3 }).max;
+
 function loadProgress() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+  let p = {};
+  try { p = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { /* порожньо */ }
+  for (const k in p) p[k] = Math.min(p[k], gameMax(k)); // старі результати (зі зірками) не перевищують нового максимуму
+  return p;
 }
 function saveStars(game, stars) {
   try {
@@ -12,6 +26,7 @@ function saveStars(game, stars) {
     localStorage.setItem(STORE_KEY, JSON.stringify(p));
   } catch (e) { /* без збереження — не страшно */ }
 }
+const totalBolts = () => Object.values(loadProgress()).reduce((s, n) => s + n, 0);
 /* Гравець: ім'я та дані для сертифіката (зберігаються лише в цьому браузері) */
 const PLAYER_KEY = 'elektro_kvest_player';
 function loadPlayer() {
@@ -68,13 +83,27 @@ function checkField(kind, raw) {
     if (v.replace(/[^A-Za-zА-Яа-яІіЇїЄєҐґ]/g, '').length < 2) return 'Занадто коротка назва міста.';
   }
   if (kind === 'school') {
-    if (!/^[A-Za-zА-Яа-яІіЇїЄєҐґЁё0-9№"«»'ʼ.,() -]+$/.test(v)) return 'У назві школи є недопустимі символи.';
-    if (v.replace(/[^A-Za-zА-Яа-яІіЇїЄєҐґ]/g, '').length < 3) return 'Впиши назву школи, наприклад «Ліцей № 5».';
+    if (!/^[A-Za-zА-Яа-яІіЇїЄєҐґЁё0-9№"«»'ʼ.,() -]+$/.test(v)) return 'У назві навчального закладу є недопустимі символи.';
+    if (v.replace(/[^A-Za-zА-Яа-яІіЇїЄєҐґ]/g, '').length < 3) return 'Впиши назву навчального закладу, наприклад «Ліцей № 5» або «КНУ».';
   }
   if (kind === 'grade') {
-    if (!/^(9|10|11)(\s?-?\s?[А-ЯІЄЇа-яієїA-Za-z])?$/.test(v)) return 'Клас у форматі 9, 10-А або 11Б (9–11 клас).';
+    // клас 1–11 (з літерою чи без, можна дописати «клас») або курс 1–6 (для коледжів і університетів)
+    const cls = /^(1[01]?|[2-9])(\s?-?\s?[А-ЯІЄЇа-яієїA-Za-z])?(\s?клас)?$/i;
+    const course = /^[1-6]\s?(-?\s?(й|ий))?\s?курс$/i;
+    if (!cls.test(v) && !course.test(v)) return 'Напиши клас (наприклад 7, 9-А, 11Б) або курс (наприклад 2 курс).';
   }
   return '';
+}
+// Охайний запис: «9-а» → «9-А», «9а клас» → «9А клас», «2 КУРС» → «2 курс»
+function tidyGrade(v) {
+  if (!v) return '';
+  if (/курс/i.test(v)) return v.toLowerCase();
+  return v.replace(/клас/i, '').trim().toUpperCase() + (/клас/i.test(v) ? ' клас' : '');
+}
+// Як показати клас/курс на сертифікаті: «9-А» → «9-А клас», «2 курс» → як є
+function gradeLabel(v) {
+  if (!v) return '';
+  return /курс|клас/i.test(v) ? v : v + ' клас';
 }
 /* Здогадка про стать за ім'ям — лише для початкового вибору перемикача «Учень / Учениця».
    Більшість жіночих імен закінчується на -а/-я, але є чоловічі винятки (Микола, Микита, Ілля…). */
@@ -99,10 +128,12 @@ function resetAll() {
   try { localStorage.removeItem(STORE_KEY); localStorage.removeItem(PLAYER_KEY); } catch (e) { /* нічого */ }
 }
 
+// Ряд блискавок: n здобутих із total можливих (векторна іконка — однакова всюди)
+const BOLT_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 1.5 4 13.5h6.2L9 22.5l10.5-12.8h-6.4z"/></svg>';
 function starsHTML(n, total = 3) {
-  let s = '';
-  for (let i = 0; i < total; i++) s += `<span class="star ${i < n ? 'on' : ''}">★</span>`;
-  return s;
+  let s = `<span class="bolts" title="${n} з ${total}" aria-label="${n} з ${total} блискавок">`;
+  for (let i = 0; i < total; i++) s += `<span class="bolt-ic ${i < n ? 'on' : ''}">${BOLT_SVG}</span>`;
+  return s + '</span>';
 }
 function shuffle(a) {
   a = a.slice();
@@ -118,19 +149,40 @@ function el(html) {
   return t.content.firstElementChild;
 }
 
-function showResult({ stars, title, text, again }) {
+// Яку гру запропонувати далі: наступну ще не пройдену на максимум (по колу від поточної)
+function nextGame(currentId) {
+  const p = loadProgress();
+  const i = GAME_LIST.findIndex(g => g.id === currentId);
+  for (let k = 1; k < GAME_LIST.length; k++) {
+    const g = GAME_LIST[(i + k) % GAME_LIST.length];
+    if ((p[g.id] || 0) < g.max) return g;
+  }
+  return null; // усе пройдено на максимум
+}
+
+// Вікно результату. game — id гри (для максимуму блискавок і кнопки «Наступна гра»)
+function showResult({ stars, title, text, again, game }) {
+  const max = gameMax(game);
+  const next = nextGame(game);
+  const t = document.querySelector('.toast'); if (t) t.classList.remove('show'); // підказка не має перекривати результат
+  const allDone = !next;
   const box = el(`<div class="modal-bg"><div class="modal">
-    <div class="stars big">${starsHTML(stars)}</div>
+    <div class="stars big">${starsHTML(stars, max)}</div>
+    <div class="got">${stars} з ${max} ⚡ · усього ${totalBolts()} з ${MAX_TOTAL}</div>
     <h2>${title}</h2><p>${text}</p>
     <div class="row">
-      <button class="btn" id="m-again">Зіграти ще</button>
-      <a class="btn btn-ghost" href="index.html">До меню</a>
+      ${next ? `<a class="btn" href="${next.href}">Наступна гра: ${next.title} →</a>`
+             : `<a class="btn" href="index.html#cert">🎓 До сертифіката →</a>`}
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn btn-ghost" id="m-again">↻ Зіграти ще</button>
+      <a class="btn btn-ghost" href="index.html#choose">Усі ігри</a>
     </div>
     ${typeof CONFIG !== 'undefined' && CONFIG.admission ? `<a class="admit" href="${CONFIG.admission}" target="_blank" rel="noopener">⚡ Хочеш вчитися на електрика? ${CONFIG.admissionLabel} →</a>` : ''}
     </div></div>`);
   document.body.appendChild(box);
   box.querySelector('#m-again').onclick = () => { box.remove(); again(); };
-  if (stars >= 2) confetti();
+  if (stars >= Math.ceil(max / 2) || allDone) confetti();
 }
 
 function confetti() {
