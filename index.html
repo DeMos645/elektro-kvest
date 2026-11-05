@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Електро-квест</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="home">
+
+<!-- Екран 1: заставка на весь екран -->
+<header class="hero" id="top">
+  <div class="hero-in">
+    <div class="hero-text">
+      <div id="logo" class="fx"></div>
+      <div class="eyebrow fx" id="college"></div>
+      <div class="greet fx" id="greet"></div>
+      <h1 class="fx">Електро<span>-квест</span></h1>
+      <p class="slogan fx" id="slogan"></p>
+      <div class="hero-actions fx">
+        <a class="btn btn-lg" href="#choose">Почати квест ⚡</a>
+        <a class="btn btn-outline" id="hero-admit" target="_blank" rel="noopener"></a>
+      </div>
+      <div class="progress fx">
+        <div class="progress-head"><span>Твій прогрес</span><span id="total"></span></div>
+        <div class="progress-bar"><i id="total-bar"></i></div>
+      </div>
+    </div>
+    <div class="hero-art fx" aria-hidden="true"><svg id="hero-svg" viewBox="10 -50 340 300" overflow="visible"></svg></div>
+  </div>
+  <a class="scroll-cue" href="#choose" aria-label="Перейти до вибору гри"><span>Обери гру</span><i></i></a>
+</header>
+
+<!-- Екран 2: вибір гри, сертифікат, вступ -->
+<main class="wrap" id="choose">
+  <div class="section-head reveal">
+    <div>
+      <h2>Обери гру</h2>
+      <p id="spec"></p>
+    </div>
+    <div class="player-box">
+      <span id="player-name"></span>
+      <button class="btn btn-small" id="new-player" title="Стерти зірки й почати заново">🔄 Новий гравець</button>
+    </div>
+  </div>
+  <div class="games" id="games"></div>
+
+  <!-- Сертифікат -->
+  <section class="cert-box reveal" id="cert"></section>
+
+  <section class="cta reveal">
+    <div class="cta-main">
+      <h2>Сподобалось? <span>Стань електриком по-справжньому!</span></h2>
+      <p>У <b id="cta-college"></b> на спеціальності «<span id="cta-spec"></span>» ти навчишся проєктувати, монтувати та обслуговувати електрообладнання — від побутової проводки до електростанцій.</p>
+      <div class="row">
+        <a class="btn" id="cta-admit" target="_blank" rel="noopener"></a>
+        <a class="btn btn-outline" id="cta-site" target="_blank" rel="noopener">Сайт університету</a>
+      </div>
+    </div>
+    <div class="cta-jobs">
+      <h3>Ким ти зможеш працювати</h3>
+      <ul id="cta-jobs"></ul>
+    </div>
+  </section>
+
+  <div class="footer"><a id="foot-site" target="_blank" rel="noopener"></a></div>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/symbols.js"></script>
+<script src="js/common.js"></script>
+<script>
+  const GAMES = [
+    { id: 'match_elements', href: 'match.html?set=elements', title: 'Знайди пару',
+      desc: 'Впізнай елементи електричного кола за зовнішнім виглядом.', lvl: 'Легкий', lc: 'easy',
+      icon: `<svg viewBox="0 0 240 100"><g>${ILL.lamp}</g><g transform="translate(120,0)">${ILL.battery}</g></svg>` },
+    { id: 'match_symbols', href: 'match.html?set=symbols', title: 'Умовні позначення',
+      desc: 'Кожен елемент має свій знак на схемі. Чи знаєш ти їх?', lvl: 'Середній', lc: 'mid',
+      icon: `<svg viewBox="0 0 170 44"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><g transform="translate(2,2)">${symInner('lamp')}</g><g transform="translate(88,2)">${symInner('rheostat')}</g></g></svg>` },
+    { id: 'circuit', href: 'circuit.html', title: 'Збери коло',
+      desc: '9 завдань: добудуй схему, виміряй струм, порівняй з\'єднання, перевір діод, запобіжник і конденсатор.', lvl: 'Середній', lc: 'mid',
+      // viewBox з запасом зверху й зліва, щоб лампа й батарейка не обрізалися
+      icon: `<svg viewBox="-2 -8 124 80"><rect x="15" y="10" width="90" height="50" fill="none" stroke="currentColor" stroke-width="3"/><g transform="translate(60,10) scale(.7) translate(-40,-20)"><rect x="0" y="2" width="80" height="36" class="mask"/><g fill="none" stroke="currentColor" stroke-width="3">${symInner('lamp', { glow: 1 })}</g></g><g transform="translate(15,35) rotate(90) scale(.6) translate(-40,-20)"><rect x="0" y="2" width="80" height="36" class="mask"/><g fill="none" stroke="currentColor" stroke-width="3">${symInner('battery')}</g></g></svg>` },
+    { id: 'quiz', href: 'quiz.html', title: 'Хто хоче стати електриком?',
+      desc: '12 питань від простого до складного — щоразу нові. Є підказки!', lvl: 'Легкий → складний', lc: 'mix',
+      icon: `<svg viewBox="0 0 100 60"><circle cx="50" cy="30" r="26" style="fill:var(--navy-2)"/><text x="50" y="40" text-anchor="middle" font-size="30" font-weight="800" fill="#ffc533" font-family="Arial">?</text></svg>` }
+  ];
+
+  /* Ілюстрація в шапці: просте коло «батарейка — лампа — ключ».
+     Натискання на ключ вмикає й вимикає світло. */
+  (function heroArt() {
+    const place = (x, y, r, key, opt = {}, cls = '') =>
+      `<g class="${cls}" transform="translate(${x},${y}) rotate(${r}) scale(1.25) translate(-40,-20)"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${symInner(key, opt)}</g></g>`;
+    const wires = 'M50 85 V40 H130 M230 40 H310 V230 H230 M130 230 H50 V185';
+    const svg = document.getElementById('hero-svg');
+    svg.innerHTML = `
+      <defs><radialGradient id="hg"><stop offset="0" stop-color="#ffe066" stop-opacity=".9"/><stop offset=".45" stop-color="#ffc533" stop-opacity=".35"/><stop offset="1" stop-color="#ffc533" stop-opacity="0"/></radialGradient></defs>
+      <circle class="hero-glow" cx="180" cy="40" r="95" fill="url(#hg)"/>
+      <path d="${wires}" class="hw"/>
+      <path d="${wires}" class="hflow"/>
+      ${place(50, 135, 90, 'battery')}
+      ${place(180, 40, 0, 'lamp', { glow: 1 }, 'h-lamp')}
+      <g class="h-switch" role="button" tabindex="0" aria-label="Ключ: увімкнути або вимкнути світло">
+        <rect x="120" y="190" width="120" height="70" rx="14" class="h-hit"/>
+        ${place(180, 230, 0, 'switch', { closed: true }, 'sw-on')}
+        ${place(180, 230, 0, 'switch', { closed: false }, 'sw-off')}
+      </g>
+      <text class="h-hint" x="180" y="176" text-anchor="middle">Натисни на ключ ↓</text>`;
+    const sw = svg.querySelector('.h-switch');
+    const toggle = () => {
+      const off = svg.classList.toggle('off');
+      svg.querySelector('.h-hint').textContent = off ? 'Коло розімкнене — світла немає' : 'Коло замкнене — лампа світить!';
+    };
+    sw.addEventListener('click', toggle);
+    sw.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+  })();
+
+  /* Тексти з налаштувань */
+  document.getElementById('college').textContent = CONFIG.college;
+  document.getElementById('slogan').textContent = CONFIG.slogan;
+  document.getElementById('spec').textContent = 'Спеціальність «' + CONFIG.speciality + '»';
+  if (CONFIG.logo) document.getElementById('logo').innerHTML = `<img class="logo" src="${CONFIG.logo}" alt="${CONFIG.college}">`;
+  document.getElementById('cta-college').textContent = CONFIG.collegeIn || CONFIG.college;
+  document.getElementById('cta-spec').textContent = CONFIG.speciality;
+  ['cta-admit', 'hero-admit'].forEach(id => {
+    const a = document.getElementById(id);
+    a.href = CONFIG.admission; a.textContent = CONFIG.admissionLabel + ' →';
+  });
+  document.getElementById('cta-site').href = CONFIG.site;
+  document.getElementById('cta-jobs').innerHTML = CONFIG.careers.map(c => `<li>${c}</li>`).join('');
+  const foot = document.getElementById('foot-site');
+  foot.href = CONFIG.site; foot.textContent = CONFIG.college + ' · ' + CONFIG.site.replace(/^https?:\/\/(www\.)?|\/$/g, '');
+
+  const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  /* Картки ігор, прогрес, гравець, сертифікат */
+  function renderAll() {
+    const prog = loadProgress();
+    const player = loadPlayer();
+    let sum = 0;
+    const box = document.getElementById('games');
+    box.innerHTML = '';
+    GAMES.forEach((g, i) => {
+      const s = prog[g.id] || 0; sum += s;
+      box.appendChild(el(`<a class="game-card reveal ${s === 3 ? 'complete' : ''}" style="--d:${i * 90}ms" href="${g.href}">
+        <div class="gc-top"><span class="num">0${i + 1}</span><span class="gc-stars">${starsHTML(s)}</span></div>
+        <div class="icon">${g.icon}</div>
+        <h3>${g.title}</h3><p>${g.desc}</p>
+        <div class="gc-foot"><span class="lvl ${g.lc}">${g.lvl}</span><span class="play">${s ? 'Ще раз' : 'Грати'} →</span></div></a>`));
+    });
+    const max = GAMES.length * 3;
+    document.getElementById('total').innerHTML = `★ <b>${sum}</b> з ${max}`;
+    requestAnimationFrame(() => document.getElementById('total-bar').style.width = (sum / max * 100) + '%');
+
+    const name = player && player.name;
+    document.getElementById('greet').innerHTML = name ? `Привіт, <b>${esc(name)}</b>! 👋` : '';
+    document.getElementById('player-name').innerHTML = name ? `Гравець: <b>${esc(name)}</b>` : '';
+
+    renderCert(prog, player || {});
+    observeReveal();
+  }
+
+  // Сертифікат: відкривається, коли пройдено всі 4 гри (хоча б по 1 зірці)
+  function renderCert(prog, p) {
+    const done = GAMES.filter(g => (prog[g.id] || 0) > 0).length;
+    const box = document.getElementById('cert');
+    if (done < GAMES.length) {
+      box.className = 'cert-box reveal locked';
+      box.innerHTML = `<div class="cert-ico">🎓</div>
+        <div class="cert-body"><h2>Сертифікат Електро-квесту</h2>
+          <p>Пройди всі 4 ігри — і отримаєш іменний сертифікат, який можна зберегти як PDF.</p>
+          <div class="cert-steps">${GAMES.map(g => `<span class="${prog[g.id] ? 'ok' : ''}">${prog[g.id] ? '✓' : '○'} ${g.title}</span>`).join('')}</div>
+          <div class="cert-meter"><i style="width:${done / GAMES.length * 100}%"></i></div>
+          <small>Пройдено ${done} з ${GAMES.length}</small></div>`;
+      return;
+    }
+    box.className = 'cert-box reveal open';
+    box.innerHTML = `<div class="cert-ico">🎓</div>
+      <div class="cert-body"><h2>Вітаємо! Сертифікат чекає на тебе</h2>
+        <p>Заповни дані — вони з'являться на сертифікаті.</p>
+        <form class="cert-form" id="cert-form" novalidate>
+          <label class="f-name">Ім'я та прізвище*<input name="name" maxlength="40" value="${esc(p.name)}" placeholder="Наприклад, Олена Коваль"><span class="err"></span></label>
+          <div class="f-gender"><span class="lbl">Хто ти?*</span>
+            <div class="seg" role="radiogroup">
+              <label><input type="radio" name="gender" value="m"><span>👦 Учень</span></label>
+              <label><input type="radio" name="gender" value="f"><span>👧 Учениця</span></label>
+            </div><span class="err" id="g-err"></span></div>
+          <label class="f-school">Школа<input name="school" maxlength="60" value="${esc(p.school)}" placeholder="Наприклад, Ліцей № 5"><span class="err"></span></label>
+          <label class="f-grade">Клас<input name="grade" maxlength="5" value="${esc(p.grade)}" placeholder="9-А"><span class="err"></span></label>
+          <label class="f-city">Місто<input name="city" maxlength="30" value="${esc(p.city)}" placeholder="Кривий Ріг"><span class="err"></span></label>
+          <button class="btn btn-lg" type="submit">🎓 Отримати сертифікат</button>
+        </form></div>`;
+    const form = document.getElementById('cert-form');
+    // перевіряємо кожне поле; помилку показуємо під ним
+    const validate = input => {
+      const msg = checkField(input.name, input.value);
+      input.classList.toggle('bad-input', !!msg);
+      input.nextElementSibling.textContent = msg;
+      return !msg;
+    };
+    const textInputs = [...form.querySelectorAll('input:not([type=radio])')];
+    textInputs.forEach(i => i.addEventListener('blur', () => validate(i)));
+
+    // Стать: вибрана раніше, або здогадка за ім'ям (поки учень сам не перемкне)
+    let genderTouched = !!p.gender;
+    const setGender = g => { const r = form.querySelector(`input[name=gender][value="${g}"]`); if (r) r.checked = true; };
+    setGender(p.gender || guessGender(p.name));
+    form.querySelectorAll('input[name=gender]').forEach(r => r.addEventListener('change', () => { genderTouched = true; form.querySelector('#g-err').textContent = ''; }));
+    form.name.addEventListener('input', () => { if (!genderTouched) setGender(guessGender(form.name.value)); });
+
+    form.onsubmit = e => {
+      e.preventDefault();
+      const ok = textInputs.map(validate).every(Boolean);
+      const g = (form.querySelector('input[name=gender]:checked') || {}).value;
+      form.querySelector('#g-err').textContent = g ? '' : 'Обери, будь ласка.';
+      if (!ok || !g) { (textInputs.find(i => i.classList.contains('bad-input')) || form.querySelector('.seg input')).focus(); return; }
+      const v = n => form[n].value.trim().replace(/\s+/g, ' ');
+      savePlayer({ ...loadPlayer(), name: tidyName(v('name')), gender: g, school: v('school'), grade: v('grade').toUpperCase(), city: tidyName(v('city')) });
+      location.href = 'certificate.html';
+    };
+  }
+
+  /* Вікно «Як тебе звати?» — при першому вході або для нового гравця */
+  function askName(isNew) {
+    const m = el(`<div class="modal-bg"><form class="modal welcome">
+      <div class="welcome-bolt">⚡</div>
+      <h2>${isNew ? 'Новий гравець' : 'Вітаємо в Електро-квесті!'}</h2>
+      <p>Як тебе звати? Ім'я з'явиться на сертифікаті в кінці.</p>
+      <input name="name" maxlength="40" placeholder="Твоє ім'я" autocomplete="off">
+      <div class="err"></div>
+      <div class="row"><button class="btn" type="submit">Почати ⚡</button>
+      <button class="btn btn-ghost" type="button" id="skip">Пропустити</button></div></form></div>`);
+    document.body.appendChild(m);
+    const inp = m.querySelector('input');
+    setTimeout(() => inp.focus(), 50);
+    const done = name => { savePlayer({ name }); m.remove(); renderAll(); };
+    m.querySelector('form').onsubmit = e => {
+      e.preventDefault();
+      const msg = checkField('name', inp.value);
+      m.querySelector('.err').textContent = msg;
+      inp.classList.toggle('bad-input', !!msg);
+      if (msg) { inp.focus(); return; }
+      done(tidyName(inp.value));
+    };
+    m.querySelector('#skip').onclick = () => done('');
+  }
+
+  // «Новий гравець»: підтвердження, стирання зірок і даних
+  document.getElementById('new-player').onclick = () => {
+    const m = el(`<div class="modal-bg"><div class="modal">
+      <div class="welcome-bolt">🔄</div><h2>Почати з нуля?</h2>
+      <p>Усі зірки та ім'я на цьому комп'ютері буде стерто. Це зручно, коли грає наступний учень.</p>
+      <div class="row"><button class="btn" id="yes">Так, новий гравець</button><button class="btn btn-ghost" id="no">Скасувати</button></div></div></div>`);
+    document.body.appendChild(m);
+    m.querySelector('#no').onclick = () => m.remove();
+    m.querySelector('#yes').onclick = () => { m.remove(); resetAll(); renderAll(); askName(true); };
+  };
+
+  /* Плавна поява блоків при прокручуванні */
+  let io;
+  function observeReveal() {
+    if (!('IntersectionObserver' in window)) { document.querySelectorAll('.reveal').forEach(e => e.classList.add('in')); return; }
+    io = io || new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return;
+      const t = e.target;
+      t.classList.add('in'); io.unobserve(t);
+      setTimeout(() => t.classList.add('settled'), 900 + (parseInt(t.style.getPropertyValue('--d')) || 0));
+    }), { threshold: 0.12 });
+    document.querySelectorAll('.reveal:not(.in)').forEach(e => io.observe(e));
+  }
+
+  renderAll();
+  if (!loadPlayer()) askName(false); // перший вхід — питаємо ім'я
+</script>
+</body>
+</html>

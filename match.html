@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Знайди пару</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="topbar">
+  <a class="back" href="index.html">← Меню</a>
+  <h1 id="title">Знайди пару</h1>
+  <div class="stat">Помилки: <b id="s-err">0</b></div>
+  <div class="stat">⏱ <b id="s-time">0:00</b></div>
+</div>
+<main class="wrap wrap-wide">
+  <p class="task" id="task"></p>
+  <div class="match-layout">
+    <section class="pics" id="pics"></section>
+    <aside class="match-side">
+      <div class="panel names-panel">
+        <div class="panel-h"><span>Назви</span><span class="muted">Знайдено <b id="s-pairs">0</b> з <span id="s-total">0</span></span></div>
+        <div class="mini-progress"><i id="s-bar"></i></div>
+        <div class="names" id="names"></div>
+        <div class="names-hint">Перетягни назву на картинку — або натисни на картинку, а потім на назву.</div>
+      </div>
+      <div class="panel fact-panel" id="fact"></div>
+    </aside>
+  </div>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/symbols.js"></script>
+<script src="js/common.js"></script>
+<script src="js/match.js"></script>
+</body>
+</html>

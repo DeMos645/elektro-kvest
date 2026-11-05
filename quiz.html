@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Хто хоче стати електриком?</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="quiz-page">
+<div class="topbar">
+  <a class="back" href="index.html">← Меню</a>
+  <h1>Хто хоче стати електриком?</h1>
+  <div class="stat">Бали: <b id="s-score">0</b></div>
+</div>
+<main class="wrap wrap-wide">
+  <div class="quiz-layout">
+    <section class="qcard" id="qcard"></section>
+    <aside class="quiz-side">
+      <div class="side-title">Підказки</div>
+      <div class="lifelines" id="lifelines"></div>
+      <div class="side-title">Сходинки</div>
+      <div class="ladder" id="ladder"></div>
+      <button class="btn btn-take" id="take">Забрати бали</button>
+      <p class="side-note">🔒 — неспалима сума: її збережеш, навіть якщо далі помилишся. Відповідати можна клавішами 1–4.</p>
+    </aside>
+  </div>
+</main>
+
+<script src="js/config.js"></script>
+<script src="js/symbols.js"></script>
+<script src="js/common.js"></script>
+<script src="js/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сертифікат — Електро-квест</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  /* Сертифікат. Розміри в cqw (частки ширини аркуша) — тому однаково виглядає на екрані й у PDF.
+     Друк = A4 альбомний без полів; кнопки не друкуються. */
+  @page { size: A4 landscape; margin: 0; }
+  body.cert-page {
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 40px;
+    background: radial-gradient(ellipse at 50% 0, #6b1477, transparent 60%), linear-gradient(180deg, #2a0631, #17031b);
+  }
+  .cert-tools { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
+  .cert-tools .btn-ghost { background: transparent; color: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, .4) inset; }
+  .cert-tip { color: rgba(255, 255, 255, .7); font-size: 14px; text-align: center; margin: 0 0 18px; }
+
+  .sheet {
+    --gold: #c9971c; --gold-l: #f3d27a; --ink2: #2b0a33;
+    width: min(1120px, 100%); aspect-ratio: 297 / 210; position: relative; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 50% 45%, #fffef9 0, #fbf6ea 70%, #f4ead2 100%);
+    color: var(--ink2); box-shadow: 0 30px 80px rgba(0, 0, 0, .5);
+    container-type: inline-size; animation: sheet-in .6s cubic-bezier(.2, .8, .2, 1);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  @keyframes sheet-in { from { opacity: 0; transform: translateY(16px) scale(.98); } }
+  .sheet > svg.deco { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* Зона тексту — всередині рамки й не заходить на золоті кутики */
+  .content { position: absolute; inset: 8.6cqw 10cqw 9.8cqw; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .uni { display: flex; align-items: center; gap: 1.2cqw; font: 800 1.45cqw/1 "Segoe UI", Arial, sans-serif; letter-spacing: .28em; text-transform: uppercase; color: #570961; }
+  .uni::before, .uni::after { content: ""; width: 5cqw; height: .14cqw; background: var(--gold); }
+  .title { font: 700 6.6cqw/1 Georgia, "Times New Roman", serif; letter-spacing: .12em; margin-top: 2.2cqw; color: #3d0846; }
+  .sub { font: 600 1.55cqw/1.2 "Segoe UI", Arial, sans-serif; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin-top: 1.1cqw; }
+  .awarded { font: italic 1.75cqw/1 Georgia, serif; color: #6b5a70; margin-top: 2.6cqw; }
+  .name { font: italic 700 4.6cqw/1.15 Georgia, "Times New Roman", serif; color: #570961; margin-top: 1cqw; padding: 0 4cqw 1cqw; position: relative; }
+  .name::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: .18cqw; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .who { font: 600 1.5cqw/1.3 "Segoe UI", Arial, sans-serif; color: #6b5a70; margin-top: 1cqw; min-height: 1.95cqw; }
+  .text { font: 1.6cqw/1.55 "Segoe UI", Arial, sans-serif; max-width: 66cqw; margin-top: 1.7cqw; color: #3b2a40; }
+  .text b { color: #570961; }
+
+  .results { display: flex; gap: 1.2cqw; margin-top: 2cqw; }
+  .res { display: flex; align-items: center; gap: .9cqw; padding: .75cqw 1.3cqw; border-radius: 99cqw; background: #fff; border: .12cqw solid #e8dcc0; }
+  .res span { font: 700 1.2cqw/1 "Segoe UI", Arial, sans-serif; color: #3b2a40; white-space: nowrap; }
+  .res svg { height: 1.35cqw; width: auto; display: block; }
+
+  /* Низ: дата й спеціальність — симметрично, по центру над лініями, однаковим шрифтом */
+  .footer { margin-top: auto; width: 100%; padding: 0 4cqw; display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; }
+  .sig { width: 27cqw; text-align: center; font: 1.1cqw/1.3 "Segoe UI", Arial, sans-serif; color: #8a7a8e; letter-spacing: .08em; text-transform: uppercase; }
+  .sig b { display: flex; align-items: flex-end; justify-content: center; min-height: 3.6cqw; font: italic 700 1.4cqw/1.25 Georgia, serif; color: var(--ink2);
+    letter-spacing: 0; text-transform: none; padding-bottom: .5cqw; margin-bottom: .55cqw; border-bottom: .12cqw solid #cdbf9f; }
+  .sig.l { justify-self: start; } .sig.r { justify-self: end; }
+  .sig.r b { font-size: 1.25cqw; } /* довга назва спеціальності — у два рядки */
+  .seal { width: 10cqw; height: 10cqw; margin: 0 2cqw; }
+  .title { margin-top: 1.8cqw !important; }
+  .awarded { margin-top: 2cqw !important; }
+
+  @media print {
+    body.cert-page { background: none; padding: 0; display: block; }
+    .cert-tools, .cert-tip { display: none !important; }
+    .sheet { width: 297mm; height: 210mm; aspect-ratio: auto; box-shadow: none; animation: none; }
+  }
+</style>
+</head>
+<body class="cert-page">
+  <div class="cert-tools">
+    <a class="btn btn-ghost" href="index.html#cert">← Назад</a>
+    <button class="btn" id="print">⬇ Зберегти як PDF</button>
+  </div>
+  <p class="cert-tip">У вікні друку виберіть «Зберегти як PDF», орієнтацію «Альбомна» та ввімкніть «Фонова графіка».</p>
+
+  <div class="sheet">
+    <!-- Рамка й орнамент (векторні — рівні при будь-якому розмірі) -->
+    <svg class="deco" viewBox="0 0 297 210" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="gd" x1="0" x2="1"><stop offset="0" stop-color="#b7841a"/><stop offset=".5" stop-color="#f3d27a"/><stop offset="1" stop-color="#b7841a"/></linearGradient>
+        <g id="corner" fill="none" stroke="url(#gd)" stroke-width=".9" stroke-linecap="round">
+          <path d="M0 22 V6 a6 6 0 0 1 6 -6 H22"/>
+          <path d="M4 16 V9 a5 5 0 0 1 5 -5 H16"/>
+          <circle cx="9" cy="9" r="1.6" fill="url(#gd)" stroke="none"/>
+        </g>
+      </defs>
+      <rect x="0" y="0" width="297" height="7" fill="#570961"/>
+      <rect x="0" y="7" width="297" height="1.2" fill="url(#gd)"/>
+      <rect x="0" y="201.8" width="297" height="1.2" fill="url(#gd)"/>
+      <rect x="0" y="203" width="297" height="7" fill="#570961"/>
+      <rect x="12" y="17" width="273" height="176" rx="2" fill="none" stroke="#570961" stroke-width=".6"/>
+      <rect x="14.5" y="19.5" width="268" height="171" rx="1.5" fill="none" stroke="url(#gd)" stroke-width=".35"/>
+      <use href="#corner" transform="translate(17 22)"/>
+      <use href="#corner" transform="translate(280 22) scale(-1 1)"/>
+      <use href="#corner" transform="translate(17 188) scale(1 -1)"/>
+      <use href="#corner" transform="translate(280 188) scale(-1 -1)"/>
+    </svg>
+
+    <div class="content">
+      <div class="uni" id="c-uni"></div>
+      <div class="title">СЕРТИФІКАТ</div>
+      <div class="sub">учасника профорієнтаційного Електро-квесту</div>
+      <div class="awarded">засвідчує, що</div>
+      <div class="name" id="c-name"></div>
+      <div class="who" id="c-who"></div>
+      <div class="text" id="c-text"></div>
+      <div class="results" id="c-res"></div>
+      <div class="footer">
+        <div class="sig l"><b id="c-date"></b>дата проходження</div>
+        <svg class="seal" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <radialGradient id="sg" cx=".38" cy=".32"><stop offset="0" stop-color="#ffe9a8"/><stop offset=".55" stop-color="#f1c04a"/><stop offset="1" stop-color="#c9971c"/></radialGradient>
+            <path id="ring" d="M60 60 m-41 0 a41 41 0 1 1 82 0 a41 41 0 1 1 -82 0"/>
+          </defs>
+          <circle cx="60" cy="60" r="57" fill="#570961"/>
+          <circle cx="60" cy="60" r="53" fill="url(#sg)"/>
+          <circle cx="60" cy="60" r="33" fill="none" stroke="#8a5d0c" stroke-width="1" opacity=".6"/>
+          <!-- напис рівно двічі по колу: textLength = довжина кола (2π·41 ≈ 257) -->
+          <text font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="800" fill="#5a3a05">
+            <textPath href="#ring" startOffset="0" textLength="255" lengthAdjust="spacing">ЕЛЕКТРО-КВЕСТ • КНУ • ЕЛЕКТРО-КВЕСТ • КНУ •</textPath>
+          </text>
+          <path d="M66 32 L46 64 H58 L53 88 L75 54 H62 Z" fill="#570961"/>
+        </svg>
+        <div class="sig r"><b id="c-spec"></b>спеціальність</div>
+      </div>
+    </div>
+  </div>
+
+<script src="js/config.js"></script>
+<script src="js/common.js"></script>
+<script>
+  const GAMES = [
+    ['match_elements', 'Знайди пару'], ['match_symbols', 'Умовні позначення'],
+    ['circuit', 'Збери коло'], ['quiz', 'Вікторина']
+  ];
+  const p = loadPlayer() || {};
+  const prog = loadProgress();
+  const total = GAMES.reduce((s, [id]) => s + (prog[id] || 0), 0);
+  const set = (id, v) => document.getElementById(id).textContent = v;
+  // повторна перевірка: на сертифікат потрапляють лише охайні дані
+  const safe = (kind, v) => v && !checkField(kind, v) ? v : '';
+
+  // зірки — векторні, однакові й рівні
+  const star = on => `<path d="M10 1.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L10 14.9l-5.2 2.8 1-5.9L1.5 7.7l5.9-.8z" transform="translate(${on.x} 0)" fill="${on.on ? '#e0a91f' : '#e3d9c2'}"/>`;
+  const stars = n => `<svg viewBox="0 0 62 19">${[0, 1, 2].map(i => star({ x: i * 21, on: i < n })).join('')}</svg>`;
+
+  set('c-uni', CONFIG.college);
+  set('c-name', safe('name', p.name) || 'Учасник квесту');
+  set('c-who', [safe('school', p.school), safe('grade', p.grade) ? p.grade + ' клас' : '', safe('city', p.city)].filter(Boolean).join('  ·  '));
+  // текст у потрібному роді: стать обрав учень, або здогадка за ім'ям
+  const fem = (p.gender || guessGender(p.name)) === 'f';
+  const g = (m, f) => fem ? f : m;
+  document.getElementById('c-text').innerHTML =
+    `успішно ${g('пройшов', 'пройшла')} усі чотири випробування Електро-квесту: ${g('впізнав', 'впізнала')} елементи кола та їхні умовні позначення, ${g('зібрав', 'зібрала')} електричні схеми й ${g('відповів', 'відповіла')} на питання вікторини. ${g('Здобув', 'Здобула')} <b>${total} з ${GAMES.length * 3} зірок</b>.`;
+  document.getElementById('c-res').innerHTML = GAMES.map(([id, t]) => `<div class="res"><span>${t}</span>${stars(prog[id] || 0)}</div>`).join('');
+  set('c-date', new Date().toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }));
+  set('c-spec', CONFIG.speciality);
+  document.title = 'Сертифікат — ' + (safe('name', p.name) || 'Електро-квест'); // назва PDF-файлу за замовчуванням
+
+  document.getElementById('print').onclick = () => window.print();
+  if (total >= 10) setTimeout(confetti, 500);
+</script>
+</body>
+</html>
